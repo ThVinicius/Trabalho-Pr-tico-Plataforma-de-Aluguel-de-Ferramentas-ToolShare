@@ -1,8 +1,10 @@
 package models;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
-public class Locador extends Usuario {
+public class Locador extends Usuario implements Serializable {
+    private static final long serialVersionUID = 1L;
     private int quantidadeFerramentas;
     private double avaliacao;
 
@@ -16,7 +18,7 @@ public class Locador extends Usuario {
     public boolean validarIdentificacao() {
         return this.quantidadeFerramentas >= 1 && this.avaliacao >= 3.0;
     }
-    
+
     public int getQuantidadeFerramentas() {
         return quantidadeFerramentas;
     }

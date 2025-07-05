@@ -1,10 +1,11 @@
 package models;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-public class AluguelPromocional extends Transacao {
-
+public class AluguelPromocional extends Transacao implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final double desconto;
 
     public AluguelPromocional(Usuario usuario, Ferramenta ferramenta, LocalDateTime dataInicio, int periodo, double desconto) {

@@ -1,8 +1,11 @@
 package models;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
-public abstract class Transacao {
+public abstract class Transacao implements Serializable {
+    private static final long serialVersionUID = 1L;
     private static int proximoId = 1;
     protected int id;
     protected Usuario usuario;
@@ -21,6 +24,15 @@ public abstract class Transacao {
         this.dataInicio = dataInicio;
         this.periodo = periodo;
         this.dataFim = dataInicio.plusDays(periodo);
+    }
+
+    public static void atualizarProximoId(List<Transacao> transacoes) {
+        if (!transacoes.isEmpty()) {
+            proximoId = transacoes.stream()
+                    .mapToInt(Transacao::getId)
+                    .max()
+                    .orElse(0) + 1;
+        }
     }
 
     public abstract double calcularMulta();

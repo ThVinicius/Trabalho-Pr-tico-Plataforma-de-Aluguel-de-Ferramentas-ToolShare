@@ -5,15 +5,18 @@ import enums.MenuFerramenta;
 import enums.MenuType;
 import enums.MenuUsuario;
 import interfaces.IUserInterface;
+import services.ArmazenamentoService;
 import usecases.aluguel.*;
 import usecases.ferramenta.*;
 import usecases.usuario.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Plataforma {
     private final IUserInterface userInterface;
+    private final ArmazenamentoService armazenamentoService;
 
     private final CadastrarUsuarioUseCase cadastrarUsuarioUseCase;
     private final ConsultarUsuarioPorCpfUseCase consultarUsuarioPorCpfUseCase;
@@ -31,12 +34,15 @@ public class Plataforma {
     private final CalcularMultaPorAtrasoUseCase calcularMultaPorAtrasoUseCase;
     private final ListarHistoricoAlugueisUseCase listarHistoricoAlugueisUseCase;
 
-    private final List<Ferramenta> ferramentas = new ArrayList<>();
-    private final List<Transacao> transacoes = new ArrayList<>();
-    private final List<Usuario> usuarios = new ArrayList<>();
+    private List<Ferramenta> ferramentas;
+    private List<Transacao> transacoes;
+    private List<Usuario> usuarios;
 
     public Plataforma(IUserInterface userInterface) {
         this.userInterface = userInterface;
+        this.armazenamentoService = new ArmazenamentoService();
+        this.carregarDados();
+
         this.cadastrarUsuarioUseCase = new CadastrarUsuarioUseCase(userInterface);
         this.consultarUsuarioPorCpfUseCase = new ConsultarUsuarioPorCpfUseCase(userInterface);
         this.listarUsuariosUseCase = new ListarUsuariosUseCase(userInterface);
@@ -109,5 +115,23 @@ public class Plataforma {
         if (MenuAluguel.findByValue(selected) != MenuAluguel.VOLTAR) {
             this.gerenciarAlugueis();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void carregarDados() {
+        Map<String, List<?>> dados = armazenamentoService.carregarDados();
+        this.usuarios = new ArrayList<>((List<Usuario>) dados.get("usuarios"));
+        this.ferramentas = new ArrayList<>((List<Ferramenta>) dados.get("ferramentas"));
+        this.transacoes = new ArrayList<>((List<Transacao>) dados.get("transacoes"));
+        
+        Transacao.atualizarProximoId(this.transacoes);
+        Ferramenta.atualizarProximoCodigo(this.ferramentas);
+
+        userInterface.showMessage("Info", "Dados carregados com sucesso!");
+    }
+
+    public void salvarDados() {
+        armazenamentoService.salvarDados(usuarios, ferramentas, transacoes);
+        userInterface.showMessage("Info", "Dados salvos com sucesso!");
     }
 }

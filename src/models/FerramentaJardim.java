@@ -2,7 +2,10 @@ package models;
 
 import enums.StatusFerramenta;
 
-public class FerramentaJardim extends Ferramenta {
+import java.io.Serializable;
+
+public class FerramentaJardim extends Ferramenta implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String tipoCorte;
     private int nivelSeguranca;
 

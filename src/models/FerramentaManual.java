@@ -2,7 +2,10 @@ package models;
 
 import enums.StatusFerramenta;
 
-public class FerramentaManual extends Ferramenta {
+import java.io.Serializable;
+
+public class FerramentaManual extends Ferramenta implements Serializable {
+    private static final long serialVersionUID = 1L;
     private double peso;
     private String material;
 

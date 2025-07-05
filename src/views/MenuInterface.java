@@ -18,6 +18,7 @@ public class MenuInterface {
         Integer selected = this.userInterface.showMenu(MenuType.PRINCIPAL);
 
         if (selected == null) {
+            this.plataforma.salvarDados();
             return;
         }
 
@@ -25,6 +26,7 @@ public class MenuInterface {
             case 1 -> this.plataforma.gerenciarUsuarios();
             case 2 -> this.plataforma.gerenciarFerramentas();
             case 3 -> this.plataforma.gerenciarAlugueis();
+            case 4 -> this.plataforma.salvarDados();
         }
 
         if (MenuPrincipal.findByValue(selected) != MenuPrincipal.SAIR) {

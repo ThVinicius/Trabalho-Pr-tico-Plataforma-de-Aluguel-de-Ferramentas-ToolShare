@@ -2,7 +2,10 @@ package models;
 
 import enums.StatusFerramenta;
 
-public class FerramentaEletrica extends Ferramenta {
+import java.io.Serializable;
+
+public class FerramentaEletrica extends Ferramenta implements Serializable {
+    private static final long serialVersionUID = 1L;
     private int voltagem;
     private double potencia;
 

@@ -2,7 +2,11 @@ package models;
 
 import enums.StatusFerramenta;
 
-public abstract class Ferramenta {
+import java.io.Serializable;
+import java.util.List;
+
+public abstract class Ferramenta implements Serializable {
+    private static final long serialVersionUID = 1L;
     private static int proximoCodigo = 1;
     private final int codigo;
     private String nome;
@@ -20,10 +24,19 @@ public abstract class Ferramenta {
         this.proprietario = proprietario;
     }
 
+    public static void atualizarProximoCodigo(List<Ferramenta> ferramentas) {
+        if (!ferramentas.isEmpty()) {
+            proximoCodigo = ferramentas.stream()
+                    .mapToInt(Ferramenta::getCodigo)
+                    .max()
+                    .orElse(0) + 1;
+        }
+    }
+
     public abstract double calcularValorAluguel(int dias);
 
     public abstract String getNomeCategoria();
-    
+
     public int getCodigo() {
         return codigo;
     }

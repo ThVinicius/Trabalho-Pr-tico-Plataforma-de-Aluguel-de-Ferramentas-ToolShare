@@ -27,3 +27,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+ferramentas.dat
+transacoes.dat
+usuarios.dat

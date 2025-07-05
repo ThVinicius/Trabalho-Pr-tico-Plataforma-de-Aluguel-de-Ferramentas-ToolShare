@@ -1,10 +1,12 @@
 package models;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Locatario extends Usuario {
+public class Locatario extends Usuario implements Serializable {
+    private static final long serialVersionUID = 1L;
     private List<Transacao> historicoAlugueis;
     private double limiteCredito;
 
@@ -18,7 +20,7 @@ public class Locatario extends Usuario {
     public boolean validarIdentificacao() {
         return this.limiteCredito > 0 && this.historicoAlugueis.size() < 10;
     }
-    
+
     public List<Transacao> getHistoricoAlugueis() {
         return historicoAlugueis;
     }
