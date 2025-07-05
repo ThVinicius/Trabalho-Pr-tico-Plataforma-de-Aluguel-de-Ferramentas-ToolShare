@@ -4,7 +4,8 @@ public enum MenuPrincipal {
     GERENCIAR_USUARIOS(1, "Gerenciar Usuários"),
     GERENCIAR_OPERACAO(2, "Gerenciar Ferramentas"),
     GERENCIAR_ALUGUEIS(3, "Gerenciar Aluguéis"),
-    SAIR(4, "Sair");
+    GERAR_RELATORIO(4, "Gerar Relatório de Faturamento"),
+    SAIR(5, "Sair");
 
     private final int value;
     private final String operation;

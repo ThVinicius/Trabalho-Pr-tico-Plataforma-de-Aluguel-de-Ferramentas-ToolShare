@@ -26,7 +26,8 @@ public class MenuInterface {
             case 1 -> this.plataforma.gerenciarUsuarios();
             case 2 -> this.plataforma.gerenciarFerramentas();
             case 3 -> this.plataforma.gerenciarAlugueis();
-            case 4 -> this.plataforma.salvarDados();
+            case 4 -> this.plataforma.gerarRelatorio();
+            case 5 -> this.plataforma.salvarDados();
         }
 
         if (MenuPrincipal.findByValue(selected) != MenuPrincipal.SAIR) {

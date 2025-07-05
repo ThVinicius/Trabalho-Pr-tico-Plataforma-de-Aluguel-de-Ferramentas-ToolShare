@@ -8,6 +8,7 @@ import interfaces.IUserInterface;
 import services.ArmazenamentoService;
 import usecases.aluguel.*;
 import usecases.ferramenta.*;
+import usecases.relatorio.GerarRelatorioFaturamentoUseCase;
 import usecases.usuario.*;
 
 import java.util.ArrayList;
@@ -34,6 +35,8 @@ public class Plataforma {
     private final CalcularMultaPorAtrasoUseCase calcularMultaPorAtrasoUseCase;
     private final ListarHistoricoAlugueisUseCase listarHistoricoAlugueisUseCase;
 
+    private final GerarRelatorioFaturamentoUseCase gerarRelatorioFaturamentoUseCase;
+
     private List<Ferramenta> ferramentas;
     private List<Transacao> transacoes;
     private List<Usuario> usuarios;
@@ -58,6 +61,8 @@ public class Plataforma {
         this.consultarAluguelAtivoUseCase = new ConsultarAluguelAtivoUseCase(userInterface);
         this.calcularMultaPorAtrasoUseCase = new CalcularMultaPorAtrasoUseCase(userInterface);
         this.listarHistoricoAlugueisUseCase = new ListarHistoricoAlugueisUseCase(userInterface);
+
+        this.gerarRelatorioFaturamentoUseCase = new GerarRelatorioFaturamentoUseCase(userInterface);
     }
 
     public void gerenciarUsuarios() {
@@ -117,13 +122,17 @@ public class Plataforma {
         }
     }
 
+    public void gerarRelatorio() {
+        gerarRelatorioFaturamentoUseCase.execute(transacoes);
+    }
+
     @SuppressWarnings("unchecked")
     private void carregarDados() {
         Map<String, List<?>> dados = armazenamentoService.carregarDados();
         this.usuarios = new ArrayList<>((List<Usuario>) dados.get("usuarios"));
         this.ferramentas = new ArrayList<>((List<Ferramenta>) dados.get("ferramentas"));
         this.transacoes = new ArrayList<>((List<Transacao>) dados.get("transacoes"));
-        
+
         Transacao.atualizarProximoId(this.transacoes);
         Ferramenta.atualizarProximoCodigo(this.ferramentas);
 
