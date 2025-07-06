@@ -1,5 +1,6 @@
 package usecases.ferramenta;
 
+import exceptions.FormatoDadosException;
 import interfaces.IUserInterface;
 import models.Ferramenta;
 import utils.InputHandler;
@@ -16,7 +17,7 @@ public class BuscarFerramentaUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Ferramenta> ferramentas) {
+    public void execute(List<Ferramenta> ferramentas) throws FormatoDadosException {
         String busca = this.inputHandler.notEmpty("Buscar Ferramenta", "Digite o nome ou código da ferramenta:");
         if (busca == null) return;
 

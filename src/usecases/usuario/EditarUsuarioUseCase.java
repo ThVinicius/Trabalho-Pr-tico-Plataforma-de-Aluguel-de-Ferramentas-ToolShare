@@ -1,5 +1,7 @@
 package usecases.usuario;
 
+import exceptions.FormatoDadosException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.Usuario;
 import utils.InputHandler;
@@ -19,31 +21,21 @@ public class EditarUsuarioUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Usuario> usuarios) {
+    public void execute(List<Usuario> usuarios) throws FormatoDadosException, ValidacaoException {
         String title = "Editar Cadastro";
 
         String cpf = this.inputHandler.notEmpty(title, "Digite o CPF do usuário a editar:");
         if (cpf == null) return;
 
         if (!Usuario.validarCPF(cpf)) {
-            this.userInterface.showError("Erro: CPF inválido!");
-            return;
+            throw new FormatoDadosException("Erro: CPF inválido!");
         }
 
-        Usuario usuario = null;
-        for (Usuario u : usuarios) {
-            if (u.getCpf().equals(cpf)) {
-                usuario = u;
-                break;
-            }
-        }
-
-        if (usuario == null) {
-            this.userInterface.showError("Erro: Usuário não encontrado!");
-            return;
-        }
-
-        // Exibe dados atuais
+        Usuario usuario = usuarios.stream()
+                .filter(u -> u.getCpf().equals(cpf))
+                .findFirst()
+                .orElseThrow(() -> new ValidacaoException("Erro: Usuário não encontrado!"));
+        
         String mensagemAtual = "Dados atuais:\n" +
                 "Nome: " + usuario.getNome() + "\n" +
                 "Contato: " + usuario.getContato() + "\n" +
@@ -54,32 +46,28 @@ public class EditarUsuarioUseCase {
         if (novoNome == null) return;
         String novoContato = this.inputHandler.notEmpty(title, "Novo contato:");
         if (novoContato == null) return;
-        LocalDate novaDataNascimentoStr = this.handleDataNascInput(title, "Nova data de nascimento (DD/MM/AAAA):");
-        if (novaDataNascimentoStr == null) return;
+        LocalDate novaDataNascimento = this.handleDataNascInput(title, "Nova data de nascimento (DD/MM/AAAA):");
+        if (novaDataNascimento == null) return;
 
-        // Atualiza os dados
+
         usuario.setNome(novoNome);
         usuario.setContato(novoContato);
-        usuario.setDataNascimento(novaDataNascimentoStr);
+        usuario.setDataNascimento(novaDataNascimento);
         this.userInterface.showMessage("Sucesso", "Cadastro editado com sucesso!");
     }
 
-    private LocalDate handleDataNascInput(String title, String message) {
-        String dataNascimentoStr = this.inputHandler.notEmpty(title, "Data de nascimento (DD/MM/AAAA):");
+    private LocalDate handleDataNascInput(String title, String message) throws FormatoDadosException, ValidacaoException {
+        String dataNascimentoStr = this.inputHandler.notEmpty(title, message);
         if (dataNascimentoStr == null) return null;
 
-        LocalDate dataNascimento;
         try {
-            dataNascimento = LocalDate.parse(dataNascimentoStr, DATE_FORMATTER);
+            LocalDate dataNascimento = LocalDate.parse(dataNascimentoStr, DATE_FORMATTER);
             if (dataNascimento.isAfter(LocalDate.now())) {
-                this.userInterface.showError("Erro: Data de nascimento não pode ser futura!");
-                return this.handleDataNascInput(title, message);
+                throw new ValidacaoException("Erro: Data de nascimento não pode ser futura!");
             }
+            return dataNascimento;
         } catch (DateTimeParseException e) {
-            this.userInterface.showError("Erro: Formato de data inválido! Use DD/MM/AAAA.");
-            return this.handleDataNascInput(title, message);
+            throw new FormatoDadosException("Erro: Formato de data inválido! Use DD/MM/AAAA.");
         }
-
-        return dataNascimento;
     }
 }

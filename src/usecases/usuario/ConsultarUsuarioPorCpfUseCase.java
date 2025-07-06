@@ -1,5 +1,7 @@
 package usecases.usuario;
 
+import exceptions.FormatoDadosException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.Usuario;
 import utils.InputHandler;
@@ -15,21 +17,19 @@ public class ConsultarUsuarioPorCpfUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Usuario> usuarios) {
+    public void execute(List<Usuario> usuarios) throws FormatoDadosException, ValidacaoException {
         String cpf = this.inputHandler.notEmpty("Consultar Usuário por CPF", "Digite o CPF:");
         if (cpf == null) return;
 
-        for (Usuario usuario : usuarios) {
-            if (usuario.getCpf().equals(cpf)) {
-                String mensagem = "Usuário encontrado:\n" +
-                        "Nome: " + usuario.getNome() + "\n" +
-                        "Contato: " + usuario.getContato() + "\n" +
-                        "CPF: " + usuario.getCpf();
-                this.userInterface.showMessage("Resultado da Consulta", mensagem);
-                return;
-            }
-        }
+        Usuario usuario = usuarios.stream()
+                .filter(u -> u.getCpf().equals(cpf))
+                .findFirst()
+                .orElseThrow(() -> new ValidacaoException("Erro: Usuário não encontrado!"));
 
-        this.userInterface.showError("Erro: Usuário não encontrado!");
+        String mensagem = "Usuário encontrado:\n" +
+                "Nome: " + usuario.getNome() + "\n" +
+                "Contato: " + usuario.getContato() + "\n" +
+                "CPF: " + usuario.getCpf();
+        this.userInterface.showMessage("Resultado da Consulta", mensagem);
     }
 }

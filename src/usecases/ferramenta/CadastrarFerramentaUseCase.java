@@ -1,6 +1,8 @@
 package usecases.ferramenta;
 
 import enums.StatusFerramenta;
+import exceptions.FormatoDadosException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.*;
 import utils.InputHandler;
@@ -16,7 +18,7 @@ public class CadastrarFerramentaUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Usuario> usuarios, List<Ferramenta> ferramentas) {
+    public void execute(List<Usuario> usuarios, List<Ferramenta> ferramentas) throws ValidacaoException, FormatoDadosException {
         String title = "Cadastrar Nova Ferramenta";
 
         String cpf = this.inputHandler.notEmpty(title, "Digite o CPF do proprietário:");
@@ -24,32 +26,29 @@ public class CadastrarFerramentaUseCase {
         Usuario proprietario = usuarios.stream().filter(u -> u.getCpf().equals(cpf)).findFirst().orElse(null);
 
         if (proprietario == null) {
-            this.userInterface.showError("Usuário não encontrado!");
-            return;
+            throw new ValidacaoException("Usuário proprietário não encontrado!");
         }
 
         if (!(proprietario instanceof Locador locador)) {
-            this.userInterface.showError("Apenas usuários do tipo 'Locador' podem cadastrar ferramentas.");
-            return;
+            throw new ValidacaoException("Apenas usuários do tipo 'Locador' podem cadastrar ferramentas.");
         }
 
         long contadorFerramentas = ferramentas.stream().filter(f -> f.getProprietario().equals(locador)).count();
         if (contadorFerramentas >= 5) {
-            this.userInterface.showError("Limite máximo de 5 ferramentas atingido!");
-            return;
+            throw new ValidacaoException("Limite máximo de 5 ferramentas por locador foi atingido!");
         }
+
+        String[] categorias = {"Elétrica", "Manual", "Jardim"};
+        String categoria = this.userInterface.getInput(title, "Selecione a categoria:", categorias);
+        if (categoria == null) return;
 
         String nome = this.inputHandler.notEmpty(title, "Nome da ferramenta:");
         if (nome == null) return;
         String descricao = this.inputHandler.notEmpty(title, "Descrição da ferramenta:");
         if (descricao == null) return;
 
-        String[] categorias = {"Elétrica", "Manual", "Jardim"};
-        String categoria = this.userInterface.getInput(title, "Selecione a categoria:", categorias);
-        if (categoria == null) return;
-
         double precoPorDia = this.inputHandler.getDouble(title, "Preço por dia:");
-        
+
         double precoMinimo = switch (categoria) {
             case "Elétrica" -> 15.0;
             case "Manual" -> 8.0;
@@ -57,8 +56,7 @@ public class CadastrarFerramentaUseCase {
             default -> 0.0;
         };
         if (precoPorDia < precoMinimo) {
-            this.userInterface.showError("Preço abaixo do mínimo (R$" + precoMinimo + ") para a categoria " + categoria + "!");
-            return;
+            throw new ValidacaoException("Preço abaixo do mínimo (R$" + precoMinimo + ") para a categoria " + categoria + "!");
         }
 
         Ferramenta novaFerramenta = null;
@@ -70,6 +68,9 @@ public class CadastrarFerramentaUseCase {
             }
             case "Manual" -> {
                 double peso = this.inputHandler.getDouble(title, "Peso da ferramenta (kg):");
+                if (peso <= 0) {
+                    throw new ValidacaoException("O peso da ferramenta manual deve ser um valor positivo.");
+                }
                 String material = this.inputHandler.notEmpty(title, "Material da ferramenta:");
                 novaFerramenta = new FerramentaManual(nome, descricao, precoPorDia, StatusFerramenta.DISPONIVEL, locador, peso, material);
             }

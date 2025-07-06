@@ -1,6 +1,8 @@
 package usecases.aluguel;
 
 import enums.StatusFerramenta;
+import exceptions.FormatoDadosException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.Transacao;
 import utils.InputHandler;
@@ -20,54 +22,27 @@ public class RegistrarDevolucaoUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Transacao> transacoes) {
-        String idStr = this.inputHandler.notEmpty("Registrar Devolução", "Digite o ID da transação:");
-        if (idStr == null) return;
+    public void execute(List<Transacao> transacoes) throws FormatoDadosException, ValidacaoException {
+        Integer id = this.inputHandler.getInt("Registrar Devolução", "Digite o ID da transação:");
+        if (id == null) return;
 
-        if (idStr.isEmpty()) {
-            return;
-        }
-
-        int id;
-        try {
-            id = Integer.parseInt(idStr);
-        } catch (NumberFormatException e) {
-            this.userInterface.showError("Erro: ID inválido!");
-            return;
-        }
-
-        Transacao transacao = null;
-        for (Transacao t : transacoes) {
-            if (t.getId() == id) {
-                transacao = t;
-                break;
-            }
-        }
-
-        if (transacao == null) {
-            this.userInterface.showError("Erro: Transação não encontrada!");
-            return;
-        }
+        Transacao transacao = transacoes.stream()
+                .filter(t -> t.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new ValidacaoException("Erro: Transação não encontrada!"));
 
         if (transacao.getDataDevolucao() != null) {
-            this.userInterface.showError("Erro: Esta transação já foi devolvida!");
-            return;
+            throw new ValidacaoException("Erro: Esta transação já foi devolvida!");
         }
 
         String dataDevolucaoStr = this.inputHandler.notEmpty("Registrar Devolução", "Digite a data de devolução (ex.: DD/MM/AAAA HH:MM):");
         if (dataDevolucaoStr == null) return;
 
-        if (dataDevolucaoStr.trim().isEmpty()) {
-            this.userInterface.showError("Erro: Data de devolução é obrigatória!");
-            return;
-        }
-
         LocalDateTime dataDevolucao;
         try {
             dataDevolucao = LocalDateTime.parse(dataDevolucaoStr, DATETIME_FORMATTER);
         } catch (DateTimeParseException e) {
-            this.userInterface.showError("Erro: Formato de data inválido! Use DD/MM/AAAA HH:MM.");
-            return;
+            throw new FormatoDadosException("Erro: Formato de data inválido! Use DD/MM/AAAA HH:MM.");
         }
 
         transacao.registrarDevolucao(dataDevolucao);

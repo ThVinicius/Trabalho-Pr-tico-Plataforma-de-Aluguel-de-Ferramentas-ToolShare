@@ -1,5 +1,7 @@
 package usecases.usuario;
 
+import exceptions.FormatoDadosException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.Transacao;
 import models.Usuario;
@@ -16,42 +18,32 @@ public class ExcluirUsuarioUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Usuario> usuarios, List<Transacao> transacoes) {
+    public void execute(List<Usuario> usuarios, List<Transacao> transacoes) throws FormatoDadosException, ValidacaoException {
         String cpf = this.inputHandler.notEmpty("Excluir Usuário", "Digite o CPF do usuário a excluir:");
         if (cpf == null) return;
 
         if (!Usuario.validarCPF(cpf)) {
-            this.userInterface.showError("Erro: CPF inválido!");
-            return;
+            throw new FormatoDadosException("Erro: CPF inválido!");
         }
 
-        Usuario usuario = null;
-        for (Usuario u : usuarios) {
-            if (u.getCpf().equals(cpf)) {
-                usuario = u;
-                break;
-            }
+        Usuario usuario = usuarios.stream()
+                .filter(u -> u.getCpf().equals(cpf))
+                .findFirst()
+                .orElseThrow(() -> new ValidacaoException("Erro: Usuário não encontrado!"));
+
+
+        boolean temAluguelAtivo = transacoes.stream()
+                .anyMatch(t -> t.getUsuario().equals(usuario) && t.getDataDevolucao() == null);
+
+        if (temAluguelAtivo) {
+            throw new ValidacaoException("Erro: Usuário possui aluguéis ativos ou pendentes e não pode ser excluído!");
         }
 
-        if (usuario == null) {
-            this.userInterface.showError("Erro: Usuário não encontrado!");
-            return;
-        }
-
-        // Verifica aluguéis ativos
-        for (Transacao t : transacoes) {
-            if (t.getUsuario().equals(usuario) && t.getDataDevolucao() == null) {
-                this.userInterface.showError("Erro: Usuário possui aluguéis ativos ou pendentes!");
-                return;
-            }
-        }
-
-        // Confirmação
+       
         String mensagemConfirmacao = "Tem certeza que deseja excluir o usuário " + usuario.getNome() + " (CPF: " + usuario.getCpf() + ")?";
-        String[] confirmOptions = {"Sim", "Não",};
+        String[] confirmOptions = {"Sim", "Não"};
         String confirmExclusion = this.userInterface.getInput("Confirmar Exclusão", mensagemConfirmacao, confirmOptions);
-        if (confirmExclusion == null) return;
-        if (confirmExclusion.equals("Sim")) {
+        if (confirmExclusion != null && confirmExclusion.equals("Sim")) {
             usuarios.remove(usuario);
             this.userInterface.showMessage("Sucesso", "Usuário excluído com sucesso!");
         } else {

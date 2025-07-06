@@ -1,5 +1,7 @@
 package usecases.usuario;
 
+import exceptions.FormatoDadosException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.Locador;
 import models.Locatario;
@@ -21,7 +23,7 @@ public class CadastrarUsuarioUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Usuario> usuarios) {
+    public void execute(List<Usuario> usuarios) throws FormatoDadosException, ValidacaoException {
         String inputTitle = "Cadastro de Novo Usuário";
 
         String tipoUsuarioStr = this.userInterface.getInput(inputTitle, "Qual tipo de perfil deseja cadastrar?", new String[]{"Locador", "Locatário"});
@@ -54,62 +56,41 @@ public class CadastrarUsuarioUseCase {
         }
     }
 
-    private String handleCpfInput(String title, String message, List<Usuario> usuarios) {
+    private String handleCpfInput(String title, String message, List<Usuario> usuarios) throws FormatoDadosException, ValidacaoException {
         String cpf = this.inputHandler.notEmpty(title, "CPF:");
         if (cpf == null) return null;
 
         if (!Usuario.validarCPF(cpf)) {
-            this.userInterface.showMessage("Erro", "Erro: CPF inválido!");
-            return handleCpfInput(title, message, usuarios);
+            throw new FormatoDadosException("Formato de CPF inválido! Deve conter 11 dígitos.");
         }
-
         for (Usuario usuario : usuarios) {
             if (usuario.getCpf().equals(cpf)) {
-                this.userInterface.showError("Erro: CPF já cadastrado no sistema!");
-                return handleCpfInput(title, message, usuarios);
+                throw new ValidacaoException("Erro: CPF já cadastrado no sistema!");
             }
         }
-
         return cpf;
     }
 
-    private LocalDate handleDataNascInput(String title, String message) {
-        String dataNascimentoStr = this.inputHandler.notEmpty(title, "Data de nascimento (DD/MM/AAAA):");
+    private LocalDate handleDataNascInput(String title, String message) throws FormatoDadosException, ValidacaoException {
+        String dataNascimentoStr = this.inputHandler.notEmpty(title, message);
         if (dataNascimentoStr == null) return null;
-
-        LocalDate dataNascimento;
         try {
-            dataNascimento = LocalDate.parse(dataNascimentoStr, DATE_FORMATTER);
+            LocalDate dataNascimento = LocalDate.parse(dataNascimentoStr, DATE_FORMATTER);
             if (dataNascimento.isAfter(LocalDate.now())) {
-                this.userInterface.showError("Erro: Data de nascimento não pode ser futura!");
-                return this.handleDataNascInput(title, message);
+                throw new ValidacaoException("Data de nascimento não pode ser futura!");
             }
+            return dataNascimento;
         } catch (DateTimeParseException e) {
-            this.userInterface.showError("Erro: Formato de data inválido! Use DD/MM/AAAA.");
-            return this.handleDataNascInput(title, message);
+            throw new FormatoDadosException("Formato de data inválido! Use DD/MM/AAAA.");
         }
-
-        return dataNascimento;
     }
 
-    private Double handleLimiteCredito(String inputTitle) {
-        String limiteCreditoStr = this.inputHandler.notEmpty(inputTitle, "Informe o limite de crédito inicial:");
-        if (limiteCreditoStr == null) return null;
-
-        Double limiteCredito;
-        try {
-            limiteCredito = Double.parseDouble(limiteCreditoStr);
-
-            if (limiteCredito < 0) {
-                this.userInterface.showError("Erro: O limite de crédito não pode ser negativo!");
-                return this.handleLimiteCredito(inputTitle);
-            }
-
-        } catch (NumberFormatException e) {
-            this.userInterface.showError("Erro: Valor inválido! Informe um número válido para o limite de crédito.");
-            return this.handleLimiteCredito(inputTitle);
+    private Double handleLimiteCredito(String inputTitle) throws FormatoDadosException, ValidacaoException {
+        Double limiteCredito = this.inputHandler.getDouble(inputTitle, "Informe o limite de crédito inicial:");
+        if (limiteCredito == null) return null;
+        if (limiteCredito < 0) {
+            throw new ValidacaoException("O limite de crédito não pode ser negativo!");
         }
-
         return limiteCredito;
     }
 }

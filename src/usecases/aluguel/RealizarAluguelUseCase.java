@@ -1,6 +1,10 @@
 package usecases.aluguel;
 
 import enums.StatusFerramenta;
+import exceptions.FerramentaIndisponivelException;
+import exceptions.FormatoDadosException;
+import exceptions.SaldoInsuficienteException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.*;
 import utils.InputHandler;
@@ -17,66 +21,36 @@ public class RealizarAluguelUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Usuario> usuarios, List<Ferramenta> ferramentas, List<Transacao> transacoes) {
+    public void execute(List<Usuario> usuarios, List<Ferramenta> ferramentas, List<Transacao> transacoes) throws ValidacaoException, FerramentaIndisponivelException, SaldoInsuficienteException, FormatoDadosException {
         String title = "Realizar Aluguel";
 
         String cpf = this.inputHandler.notEmpty(title, "Digite o CPF do usuário:");
         if (cpf == null) return;
         Usuario usuario = usuarios.stream().filter(u -> u.getCpf().equals(cpf)).findFirst().orElse(null);
 
-        if (usuario == null) {
-            this.userInterface.showError("Usuário não encontrado!");
-            return;
-        }
-
-        if (!(usuario instanceof Locatario locatario)) {
-            this.userInterface.showError("Apenas usuários do tipo 'Locatário' podem alugar ferramentas.");
-            return;
-        }
-
-        if (!locatario.validarIdentificacao()) {
-            this.userInterface.showError("Aluguel bloqueado: O usuário não possui crédito positivo ou atingiu o limite de 10 aluguéis ativos.");
-            return;
-        }
+        if (usuario == null) throw new ValidacaoException("Usuário não encontrado!");
+        if (!(usuario instanceof Locatario locatario))
+            throw new ValidacaoException("Apenas 'Locatários' podem alugar.");
+        if (!locatario.validarIdentificacao())
+            throw new SaldoInsuficienteException("Aluguel bloqueado: Limite de crédito ou de aluguéis ativos atingido.");
 
         int codigo = this.inputHandler.getInt(title, "Digite o código da ferramenta:");
         Ferramenta ferramenta = ferramentas.stream().filter(f -> f.getCodigo() == codigo).findFirst().orElse(null);
+        if (ferramenta == null) throw new ValidacaoException("Ferramenta não encontrada!");
 
-        if (ferramenta == null) {
-            this.userInterface.showError("Ferramenta não encontrada!");
-            return;
-        }
-
-        if (ferramenta.getStatus() != StatusFerramenta.DISPONIVEL) {
-            this.userInterface.showError("Ferramenta não está disponível!");
-            return;
-        }
-
-        if (ferramenta.getProprietario().equals(locatario)) {
-            this.userInterface.showError("Usuário não pode alugar sua própria ferramenta!");
-            return;
-        }
-
-        if (ferramenta instanceof FerramentaEletrica && locatario.calcularIdade() < 18) {
-            this.userInterface.showError("Usuários menores de 18 anos não podem alugar ferramentas elétricas!");
-            return;
-        }
+        if (ferramenta.getStatus() != StatusFerramenta.DISPONIVEL)
+            throw new FerramentaIndisponivelException("Ferramenta não está disponível!");
+        if (ferramenta.getProprietario().equals(locatario))
+            throw new ValidacaoException("Usuário não pode alugar a própria ferramenta!");
+        if (ferramenta instanceof FerramentaEletrica && locatario.calcularIdade() < 18)
+            throw new ValidacaoException("Menores de 18 anos não podem alugar ferramentas elétricas!");
 
         int periodo = this.inputHandler.getInt(title, "Digite o período de aluguel (em dias):");
-        if (periodo <= 0) {
-            this.userInterface.showError("Período inválido!");
-            return;
-        }
-
-        if (ferramenta instanceof FerramentaJardim && periodo < 2) {
-            this.userInterface.showError("Ferramentas de jardim requerem aluguel mínimo de 2 dias!");
-            return;
-        }
-
-        if (ferramenta instanceof FerramentaJardim fj && fj.getNivelSeguranca() < 3 && periodo > 3) {
-            this.userInterface.showError("Ferramentas de jardim com nível de segurança inferior a 3 não podem ser alugadas por mais de 3 dias.");
-            return;
-        }
+        if (periodo <= 0) throw new ValidacaoException("Período de aluguel deve ser maior que zero!");
+        if (ferramenta instanceof FerramentaJardim && periodo < 2)
+            throw new ValidacaoException("Ferramentas de jardim requerem aluguel mínimo de 2 dias!");
+        if (ferramenta instanceof FerramentaJardim fj && fj.getNivelSeguranca() < 3 && periodo > 3)
+            throw new ValidacaoException("Ferramentas de jardim com baixa segurança não podem ser alugadas por mais de 3 dias.");
 
         double valorTotal = ferramenta.calcularValorAluguel(periodo);
         String confirm = this.userInterface.getInput(title, "O valor total do aluguel é R$ " + String.format("%.2f", valorTotal) + ". Confirmar?", new String[]{"Sim", "Não"});

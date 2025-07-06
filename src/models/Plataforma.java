@@ -4,6 +4,10 @@ import enums.MenuAluguel;
 import enums.MenuFerramenta;
 import enums.MenuType;
 import enums.MenuUsuario;
+import exceptions.FerramentaIndisponivelException;
+import exceptions.FormatoDadosException;
+import exceptions.SaldoInsuficienteException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import services.ArmazenamentoService;
 import usecases.aluguel.*;
@@ -71,12 +75,19 @@ public class Plataforma {
             return;
         }
 
-        switch (selected) {
-            case 1 -> cadastrarUsuarioUseCase.execute(usuarios);
-            case 2 -> consultarUsuarioPorCpfUseCase.execute(usuarios);
-            case 3 -> editarUsuarioUseCase.execute(usuarios);
-            case 4 -> excluirUsuarioUseCase.execute(usuarios, transacoes);
-            case 5 -> listarUsuariosUseCase.execute(usuarios);
+        try {
+            switch (selected) {
+                case 1 -> cadastrarUsuarioUseCase.execute(usuarios);
+                case 2 -> consultarUsuarioPorCpfUseCase.execute(usuarios);
+                case 3 -> editarUsuarioUseCase.execute(usuarios);
+                case 4 -> excluirUsuarioUseCase.execute(usuarios, transacoes);
+                case 5 -> listarUsuariosUseCase.execute(usuarios);
+            }
+        } catch (FormatoDadosException | ValidacaoException e) {
+            userInterface.showError(e.getMessage());
+        } catch (Exception e) {
+            userInterface.showError("Ocorreu um erro inesperado no sistema.");
+            e.printStackTrace();
         }
 
         if (MenuUsuario.findByValue(selected) != MenuUsuario.VOLTAR) {
@@ -86,16 +97,23 @@ public class Plataforma {
 
     public void gerenciarFerramentas() {
         Integer selected = this.userInterface.showMenu(MenuType.TOOL);
-        if (selected == null) {
+        if (selected == null || MenuFerramenta.findByValue(selected) == MenuFerramenta.VOLTAR) {
             return;
         }
 
-        switch (selected) {
-            case 1 -> cadastrarFerramentaUseCase.execute(usuarios, ferramentas);
-            case 2 -> buscarFerramentaUseCase.execute(ferramentas);
-            case 3 -> alterarPrecoFerramentaUseCase.execute(ferramentas);
-            case 4 -> atualizarStatusFerramentaUseCase.execute(usuarios, ferramentas);
-            case 5 -> listarFerramentasDisponiveisUseCase.execute(ferramentas);
+        try {
+            switch (selected) {
+                case 1 -> cadastrarFerramentaUseCase.execute(usuarios, ferramentas);
+                case 2 -> buscarFerramentaUseCase.execute(ferramentas);
+                case 3 -> alterarPrecoFerramentaUseCase.execute(ferramentas);
+                case 4 -> atualizarStatusFerramentaUseCase.execute(usuarios, ferramentas);
+                case 5 -> listarFerramentasDisponiveisUseCase.execute(ferramentas);
+            }
+        } catch (FormatoDadosException | ValidacaoException | FerramentaIndisponivelException e) {
+            userInterface.showError(e.getMessage());
+        } catch (Exception e) {
+            userInterface.showError("Ocorreu um erro inesperado: " + e.getMessage());
+            e.printStackTrace();
         }
 
         if (MenuFerramenta.findByValue(selected) != MenuFerramenta.VOLTAR) {
@@ -109,12 +127,20 @@ public class Plataforma {
             return;
         }
 
-        switch (selected) {
-            case 1 -> realizarAluguelUseCase.execute(usuarios, ferramentas, transacoes);
-            case 2 -> registrarDevolucaoUseCase.execute(transacoes);
-            case 3 -> consultarAluguelAtivoUseCase.execute(usuarios, transacoes);
-            case 4 -> calcularMultaPorAtrasoUseCase.execute(transacoes);
-            case 5 -> listarHistoricoAlugueisUseCase.execute(transacoes);
+        try {
+            switch (selected) {
+                case 1 -> realizarAluguelUseCase.execute(usuarios, ferramentas, transacoes);
+                case 2 -> registrarDevolucaoUseCase.execute(transacoes);
+                case 3 -> consultarAluguelAtivoUseCase.execute(usuarios, transacoes);
+                case 4 -> calcularMultaPorAtrasoUseCase.execute(transacoes);
+                case 5 -> listarHistoricoAlugueisUseCase.execute(transacoes);
+            }
+        } catch (FormatoDadosException | ValidacaoException | FerramentaIndisponivelException |
+                 SaldoInsuficienteException e) {
+            userInterface.showError(e.getMessage());
+        } catch (Exception e) {
+            userInterface.showError("Ocorreu um erro inesperado no sistema.");
+            e.printStackTrace();
         }
 
         if (MenuAluguel.findByValue(selected) != MenuAluguel.VOLTAR) {
@@ -123,7 +149,14 @@ public class Plataforma {
     }
 
     public void gerarRelatorio() {
-        gerarRelatorioFaturamentoUseCase.execute(transacoes);
+        try {
+            gerarRelatorioFaturamentoUseCase.execute(transacoes);
+        } catch (FormatoDadosException e) {
+            userInterface.showError(e.getMessage());
+        } catch (Exception e) {
+            userInterface.showError("Ocorreu um erro ao gerar o relatório: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @SuppressWarnings("unchecked")

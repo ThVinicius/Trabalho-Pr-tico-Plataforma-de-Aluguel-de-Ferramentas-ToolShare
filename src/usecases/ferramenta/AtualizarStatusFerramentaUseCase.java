@@ -1,6 +1,9 @@
 package usecases.ferramenta;
 
 import enums.StatusFerramenta;
+import exceptions.FerramentaIndisponivelException;
+import exceptions.FormatoDadosException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.Ferramenta;
 import models.Usuario;
@@ -17,72 +20,43 @@ public class AtualizarStatusFerramentaUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Usuario> usuarios, List<Ferramenta> ferramentas) {
+    public void execute(List<Usuario> usuarios, List<Ferramenta> ferramentas) throws FormatoDadosException, ValidacaoException, FerramentaIndisponivelException {
         String cpf = this.inputHandler.notEmpty("Atualizar Status", "Digite o CPF do usuário:");
         if (cpf == null) return;
 
         if (!Usuario.validarCPF(cpf)) {
-            this.userInterface.showError("Erro: CPF inválido!");
-            return;
+            throw new FormatoDadosException("Erro: CPF inválido!");
         }
 
-        Usuario usuario = null;
-        for (Usuario u : usuarios) {
-            if (u.getCpf().equals(cpf)) {
-                usuario = u;
-                break;
-            }
-        }
+        Usuario usuario = usuarios.stream()
+                .filter(u -> u.getCpf().equals(cpf))
+                .findFirst()
+                .orElseThrow(() -> new ValidacaoException("Erro: Usuário não encontrado!"));
 
-        if (usuario == null) {
-            this.userInterface.showError("Erro: Usuário não encontrado!");
-            return;
-        }
+        Integer codigo = this.inputHandler.getInt("Atualizar Status", "Digite o código da ferramenta:");
+        if (codigo == null) return;
 
-        String codigoStr = this.inputHandler.notEmpty("Atualizar Status", "Digite o código da ferramenta:");
-        if (codigoStr == null) return;
-        int codigo;
-        try {
-            codigo = Integer.parseInt(codigoStr);
-        } catch (NumberFormatException e) {
-            this.userInterface.showError("Erro: Código inválido!");
-            return;
-        }
-
-        Ferramenta ferramenta = null;
-        for (Ferramenta f : ferramentas) {
-            if (f.getCodigo() == codigo) {
-                ferramenta = f;
-                break;
-            }
-        }
-
-        if (ferramenta == null) {
-            this.userInterface.showError("Erro: Ferramenta não encontrada!");
-            return;
-        }
+        Ferramenta ferramenta = ferramentas.stream()
+                .filter(f -> f.getCodigo() == codigo)
+                .findFirst()
+                .orElseThrow(() -> new ValidacaoException("Erro: Ferramenta não encontrada!"));
 
         if (!ferramenta.getProprietario().equals(usuario)) {
-            this.userInterface.showError("Erro: Apenas o proprietário pode alterar o status da ferramenta!");
-            return;
+            throw new ValidacaoException("Erro: Apenas o proprietário pode alterar o status da ferramenta!");
         }
 
-        if (ferramenta.getStatus().equals("Alugada")) {
-            this.userInterface.showError("Erro: Ferramenta alugada não pode ter o status alterado!");
-            return;
+        if (ferramenta.getStatus() == StatusFerramenta.ALUGADA) {
+            throw new FerramentaIndisponivelException("Erro: Ferramenta alugada não pode ter o status alterado!");
         }
 
         String[] statusOpcoes = {"Disponível", "Em Manutenção"};
-        String novoStatus = this.userInterface.getInput(
-                "Atualizar Status", "Selecione o novo status:", statusOpcoes);
-        if (novoStatus == null) {
+        String novoStatusStr = this.userInterface.getInput("Atualizar Status", "Selecione o novo status:", statusOpcoes);
+        if (novoStatusStr == null) {
             return;
         }
 
-        StatusFerramenta statusFerramenta = StatusFerramenta.EM_MANUTENCAO;
-        if (novoStatus.equals(statusOpcoes[0])) statusFerramenta = StatusFerramenta.DISPONIVEL;
-
-        ferramenta.setStatus(statusFerramenta);
+        StatusFerramenta novoStatus = "Disponível".equals(novoStatusStr) ? StatusFerramenta.DISPONIVEL : StatusFerramenta.EM_MANUTENCAO;
+        ferramenta.setStatus(novoStatus);
         this.userInterface.showMessage("Sucesso", "Status atualizado com sucesso!");
     }
 }

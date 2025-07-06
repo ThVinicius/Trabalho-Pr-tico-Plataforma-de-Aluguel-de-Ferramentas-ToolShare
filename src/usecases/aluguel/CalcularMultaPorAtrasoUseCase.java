@@ -1,5 +1,7 @@
 package usecases.aluguel;
 
+import exceptions.FormatoDadosException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.Transacao;
 import utils.InputHandler;
@@ -18,36 +20,19 @@ public class CalcularMultaPorAtrasoUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Transacao> transacoes) {
-        String idStr = this.inputHandler.notEmpty("Calcular Multa por Atraso", "Digite o ID da transação:");
-        if (idStr == null || idStr.isEmpty()) {
+    public void execute(List<Transacao> transacoes) throws FormatoDadosException, ValidacaoException {
+        Integer id = this.inputHandler.getInt("Calcular Multa por Atraso", "Digite o ID da transação:");
+        if (id == null) {
             return;
         }
 
-        int id;
-        try {
-            id = Integer.parseInt(idStr);
-        } catch (NumberFormatException e) {
-            this.userInterface.showError("Erro: ID inválido!");
-            return;
-        }
-
-        Transacao transacao = null;
-        for (Transacao t : transacoes) {
-            if (t.getId() == id) {
-                transacao = t;
-                break;
-            }
-        }
-
-        if (transacao == null) {
-            this.userInterface.showError("Erro: Transação não encontrada!");
-            return;
-        }
+        Transacao transacao = transacoes.stream()
+                .filter(t -> t.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new ValidacaoException("Erro: Transação não encontrada!"));
 
         if (transacao.getDataDevolucao() != null) {
-            this.userInterface.showError("Erro: Esta transação já foi devolvida! Multa: R$" + String.format("%.2f", transacao.getMulta()));
-            return;
+            throw new ValidacaoException("Erro: Esta transação já foi devolvida! Multa: R$" + String.format("%.2f", transacao.getMulta()));
         }
 
         LocalDateTime dataAtual = LocalDateTime.now();

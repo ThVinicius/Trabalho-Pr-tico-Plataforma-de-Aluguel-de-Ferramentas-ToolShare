@@ -1,5 +1,6 @@
 package utils;
 
+import exceptions.FormatoDadosException;
 import interfaces.IUserInterface;
 
 public class InputHandler {
@@ -9,53 +10,32 @@ public class InputHandler {
         this.userInterface = userInterface;
     }
 
-    public String notEmpty(String title, String message) {
+    public String notEmpty(String title, String message) throws FormatoDadosException {
         String value = this.userInterface.getInput(title, message);
-
-        if (value == null) return null;
-
-        if (!value.isEmpty()) {
-            return value;
+        if (value == null) return null; // Usuário cancelou
+        if (value.trim().isEmpty()) {
+            throw new FormatoDadosException("Este campo não pode ser vazio.");
         }
-
-        this.userInterface.showError("Erro: Esse campo não pode ser vazio");
-
-        return this.notEmpty(title, message);
+        return value;
     }
 
-    public Double getDouble(String title, String message) {
-        String value = this.userInterface.getInput(title, message);
-
+    public Double getDouble(String title, String message) throws FormatoDadosException {
+        String value = this.notEmpty(title, message);
         if (value == null) return null;
-
-        if (value.isEmpty()) {
-            this.userInterface.showError("Erro: Esse campo não pode ser vazio");
-            return this.getDouble(title, message);
-        }
-
         try {
-            return Double.parseDouble(value);
+            return Double.parseDouble(value.replace(',', '.')); // Aceita vírgula e ponto
         } catch (NumberFormatException e) {
-            this.userInterface.showError("Erro: Digite um número decimal válido");
-            return this.getDouble(title, message);
+            throw new FormatoDadosException("Valor inválido. Digite um número decimal (ex: 10.50).");
         }
     }
 
-    public Integer getInt(String title, String message) {
-        String value = this.userInterface.getInput(title, message);
-
+    public Integer getInt(String title, String message) throws FormatoDadosException {
+        String value = this.notEmpty(title, message);
         if (value == null) return null;
-
-        if (value.isEmpty()) {
-            this.userInterface.showError("Erro: Esse campo não pode ser vazio");
-            return this.getInt(title, message);
-        }
-
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            this.userInterface.showError("Erro: Digite um número inteiro válido");
-            return this.getInt(title, message);
+            throw new FormatoDadosException("Valor inválido. Digite um número inteiro.");
         }
     }
 }

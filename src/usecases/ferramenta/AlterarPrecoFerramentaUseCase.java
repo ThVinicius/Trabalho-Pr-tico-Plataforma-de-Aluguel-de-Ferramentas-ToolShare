@@ -1,5 +1,7 @@
 package usecases.ferramenta;
 
+import exceptions.FormatoDadosException;
+import exceptions.ValidacaoException;
 import interfaces.IUserInterface;
 import models.Ferramenta;
 import utils.InputHandler;
@@ -15,19 +17,17 @@ public class AlterarPrecoFerramentaUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Ferramenta> ferramentas) {
-        int codigo = this.inputHandler.getInt("Alterar Preço", "Digite o código da ferramenta:");
+    public void execute(List<Ferramenta> ferramentas) throws FormatoDadosException, ValidacaoException {
+        Integer codigo = this.inputHandler.getInt("Alterar Preço", "Digite o código da ferramenta:");
+        if (codigo == null) return;
+
         Ferramenta ferramenta = ferramentas.stream()
                 .filter(f -> f.getCodigo() == codigo)
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new ValidacaoException("Erro: Ferramenta não encontrada!"));
 
-        if (ferramenta == null) {
-            this.userInterface.showError("Erro: Ferramenta não encontrada!");
-            return;
-        }
-
-        double novoPreco = this.inputHandler.getDouble("Alterar Preço", "Novo preço por dia:");
+        Double novoPreco = this.inputHandler.getDouble("Alterar Preço", "Novo preço por dia:");
+        if (novoPreco == null) return;
 
         String categoria = ferramenta.getNomeCategoria();
         double precoMinimo = switch (categoria) {
@@ -38,8 +38,7 @@ public class AlterarPrecoFerramentaUseCase {
         };
 
         if (novoPreco < precoMinimo) {
-            this.userInterface.showError("Erro: Preço abaixo do mínimo (R$" + String.format("%.2f", precoMinimo) + ") para a categoria " + categoria + "!");
-            return;
+            throw new ValidacaoException("Erro: Preço abaixo do mínimo (R$" + String.format("%.2f", precoMinimo) + ") para a categoria " + categoria + "!");
         }
 
         ferramenta.setPrecoPorDia(novoPreco);

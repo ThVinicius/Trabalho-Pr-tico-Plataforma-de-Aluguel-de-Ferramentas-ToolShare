@@ -1,5 +1,6 @@
 package usecases.relatorio;
 
+import exceptions.FormatoDadosException;
 import interfaces.IUserInterface;
 import models.Ferramenta;
 import models.Transacao;
@@ -9,8 +10,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Month;
 import java.time.Year;
+import java.time.format.TextStyle;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -24,14 +27,13 @@ public class GerarRelatorioFaturamentoUseCase {
         this.inputHandler = new InputHandler(userInterface);
     }
 
-    public void execute(List<Transacao> transacoes) {
+    public void execute(List<Transacao> transacoes) throws FormatoDadosException {
         Integer ano = inputHandler.getInt(title, "Digite o ano para o relatório (ex: " + Year.now().getValue() + "):");
         if (ano == null) return;
 
         Integer mes = inputHandler.getInt(title, "Digite o mês para o relatório (1 a 12):");
-        if (mes == null || mes < 1 || mes > 12) {
-            userInterface.showError("Mês inválido.");
-            return;
+        if (mes < 1 || mes > 12) {
+            throw new FormatoDadosException("Mês inválido. Deve ser um número entre 1 e 12.");
         }
 
         List<Transacao> transacoesDoPeriodo = filtrarTransacoesConcluidas(transacoes, ano, mes);
@@ -46,7 +48,6 @@ public class GerarRelatorioFaturamentoUseCase {
         userInterface.showMessage(title, relatorioCompleto);
         salvarRelatorioSeDesejado(relatorioCompleto, ano, mes);
     }
-
 
     private List<Transacao> filtrarTransacoesConcluidas(List<Transacao> todasTransacoes, int ano, int mes) {
         return todasTransacoes.stream()
@@ -69,8 +70,13 @@ public class GerarRelatorioFaturamentoUseCase {
     }
 
     private void adicionarCabecalho(StringBuilder relatorio, int ano, int mes) {
+        Month mesEnum = Month.of(mes);
+
+        Locale localePtBr = new Locale("pt", "BR");
+        String nomeMes = mesEnum.getDisplayName(TextStyle.FULL, localePtBr).toUpperCase();
+
         relatorio.append("========================================\n");
-        relatorio.append("  RELATÓRIO DE FATURAMENTO - ").append(Month.of(mes)).append("/").append(ano).append("\n");
+        relatorio.append("  RELATÓRIO DE FATURAMENTO - ").append(nomeMes).append("/").append(ano).append("\n");
         relatorio.append("========================================\n\n");
     }
 
@@ -118,7 +124,7 @@ public class GerarRelatorioFaturamentoUseCase {
     private void adicionarRodape(StringBuilder relatorio) {
         relatorio.append("========================================\n");
     }
-    
+
     private void salvarRelatorioSeDesejado(String conteudo, int ano, int mes) {
         String[] opcoes = {"Sim", "Não"};
         String escolha = userInterface.getInput(title, "Deseja salvar este relatório em um arquivo de texto?", opcoes);
